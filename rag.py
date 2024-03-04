@@ -1,6 +1,7 @@
 import os
 import torch
 import pandas as pd
+from langchain.document_loaders import TextLoader
 from langchain_community.document_loaders.csv_loader import CSVLoader
 from langchain.document_loaders import DataFrameLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -62,11 +63,17 @@ def load_dataset(file_path:str,
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
         docs = text_splitter.split_documents(data)
         return docs
+    elif type_file == "txt":
+        loader = TextLoader(file_path, encoding = 'UTF-8')
+        data = loader.load()
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+        docs = text_splitter.split_documents(data)
+        return docs
     else:
          raise ValueError('The extension of the source should be .csv or dataframe')
 
 def load_faiss_db(db_path,
-                  embeddings,
+                  embeddings=None,
                   docs=None, 
                   is_visualize=False):
     '''
@@ -75,6 +82,7 @@ def load_faiss_db(db_path,
     '''
     if os.path.isdir(db_path):
         db = FAISS.load_local(db_path, embeddings=embeddings, distance_strategy=DistanceStrategy.COSINE)
+        return db
     else:
         try:
             if not is_visualize:
@@ -89,16 +97,13 @@ def load_faiss_db(db_path,
                             db = FAISS.from_documents([d], embeddings, distance_strategy=DistanceStrategy.COSINE)
                         pbar.update(1)  
             db.save_local(db_path)
+            return db
         except Exception as error:
             print('Caught this error: ' + repr(error))
-    return db
 
 def define_llm(model_name:str,
-               use_4bit:bool,
-               disable_exllama=None):
+               use_4bit:bool, disable_exllama=None):
     """
-    model_name: the name of available online LLMs which are available to use
-    use_4bit: flag for activate the quantization by defining new settings 
     """
     model_config = AutoConfig.from_pretrained(
         model_name,
@@ -154,9 +159,6 @@ def create_response_chain(model, tokenizer, max_new_tokens, temperature=0.2,
                           repetition_penalty=1.1, return_full_text=True,
                           ):
     """
-    model: llm that is used
-    tokenizer: tokenizer that is used
-    max_new_tokens: the limit of generated answer will be generated
     """
     text_generation_pipeline = pipeline(
         model=model,
@@ -170,13 +172,7 @@ def create_response_chain(model, tokenizer, max_new_tokens, temperature=0.2,
 
     prompt_template = """
     ### [INST] 
-    You are a helpful, respectful and honest assistant. 
-    Always answer as helpfully as possible, while being safe.
-    Answer the question based on OUR APPLICATION knowledge from the context. 
-    OUR APPLICATION is SPOTIFY. If a question does not make any sense, or is not factually coherent, 
-    explain why instead of answering something not correct. 
-    If you don't know the answer to a question, please don't share false information. 
-    Here is context to help:
+    You are a helpful, respectful and honest assistant. Always answer as helpfully as possible, while being safe. Answer the question based on OUR APPLICATION knowledge from the context. OUR APPLICATION is SPOTIFY. If a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, please don't share false information. Here is context to help:
 
     {context}
 
@@ -201,8 +197,6 @@ def answer_with_rag(question: str,
                     llm_chain: LLMChain,
                     db,
                     k_retrieve:int=4):
-    """
-    """
     retriever = db.as_retriever(search_type="similarity_score_threshold",
                                 search_kwargs={"k": k_retrieve,
                                               "score_threshold":0.2})
