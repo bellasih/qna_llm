@@ -21,4 +21,4 @@ python index.py
 4. For accessing the vectorstore and documentation video about the QnA systems, you can visit: [Vectorstore and Video](https://s.id/vectorstore-video)
 
 ## Caution
-Some results perhaps tend to be bias due to the lack of the GPU computation for handling million of data. I will figure out how to improve the performance soon. For doing experiment and developing the app, I only setup with GPU. So, make sure you have available GPUs and activate it.
+Some results perhaps tend to be bias due to the lack of the GPU computation for handling million of data. I will figure out how to improve the performance soon. For doing experiment and developing the app, I only setup with GPU. So, make sure you have available GPUs and activate one of them.
