@@ -16,7 +16,7 @@ python main.py
 ```
 3. Meanwhile for running the app, you can execute this command:
 ```
-python index.py
+streamlit run index.py
 ```
 4. For accessing the vectorstore and documentation video about the QnA systems, you can visit: [Vectorstore and Video](https://s.id/vectorstore-video)
 
