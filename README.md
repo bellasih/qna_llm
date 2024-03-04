@@ -1,4 +1,4 @@
-# qna_llm
+# QnA by Implementing RAG & Available LLMs
 
 This repository contains code implementations for Retrieval-Augmented Generation (RAG).
 
