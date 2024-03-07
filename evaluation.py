@@ -21,6 +21,11 @@ def evaluate_with_bleu(answer,reference):
     score_bleu = bleu.compute(predictions=[answer], references=reference)
     return score_bleu
 
+def evaluate_with_rouge(answer,reference):
+    rouge = evaluate.load('rouge')
+    score_rouge = rouge.compute(predictions=[answer], references=reference)
+    return score_rouge
+
 def create_qa_pair(model,
                    n_generation:int,
                    docs):

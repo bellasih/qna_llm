@@ -34,7 +34,7 @@ def parse_opt():
     parser.add_argument('--db_name', type=str, default='faiss_index', help='vectorstore')
     parser.add_argument('--question', type=str, default='')
     parser.add_argument('--benchmark_data', type=str, default='')
-    parser.add_argument('--verctorstore_name', type=str, default='faiss_index_all-mpnet-base-v2_cs500_co50_1000')
+    parser.add_argument('--vectorstore_name', type=str, default='faiss_index_all-mpnet-base-v2_cs500_co50_1000')
     parser.add_argument('--dataset_source', type=str, default='dataset/clean_spotify_dataset.csv', help='filename of data (.csv)')
     parser.add_argument('--download_dataset', type=int, default=0, help='0: not download from kaggle, 1: download from kaggle')
     parser.add_argument('--device', default='cuda:0', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
@@ -68,7 +68,7 @@ def main(opt):
     encode_kwargs = {'normalize_embeddings': opt["normalize_embedding"]}
     embeddings = define_embedding(opt["embedding_name"], model_kwargs, encode_kwargs)
 
-    db = load_faiss_db(opt["vectorestore_name"], embeddings=embeddings)
+    db = load_faiss_db(opt["vectorstore_name"], docs=docs, embeddings=embeddings)
     
     model, tokenizer = define_llm(opt["model_name"], True)
     llm_chain = create_response_chain(model, tokenizer, 256, temperature=0.1)
@@ -78,15 +78,17 @@ def main(opt):
             benchmark_df = pd.read_csv(opt["benchmark_data"])
 
             question = benchmark_df["questions"].tolist()
-            questions, answers, contexts, ground_truth, scores_bleu = [], [], [], [], []
+            questions, answers, contexts, ground_truth, scores_bleu, scores_rouge = [], [], [], [], [], []
             for i,q in enumerate(tqdm(question)):
                 answer, relevant_docs = answer_with_rag(q, llm_chain, db, k_retrieve=10)
                 score = evaluate_with_bleu(answer, benchmark_df["answers"][i])
+                score_r = evaluate_with_rouge(answer, benchmark_df["answers"][i])
                 questions.append(q)
                 answers.append(answer)
                 contexts.append(relevant_docs)
                 ground_truth.append(benchmark_df["answers"][i])
                 scores_bleu.append(score)
+                scores_rouge.append(score_r)
 
             data = {
                 "question": questions,
@@ -98,6 +100,7 @@ def main(opt):
                 eval_df = evaluate_with_ragas(data)
             except:
                 data["score_bleu"] = scores_bleu
+                data["score_rouge"] = scores_rouge
                 eval_df = pd.DataFrame(data)
 
             eval_df.to_csv("eval_{}_{}.csv".format(opt["model_name"], opt["benchmark_data"].split(".")[0]),
