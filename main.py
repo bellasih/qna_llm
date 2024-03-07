@@ -59,15 +59,18 @@ def main(opt):
         temp.to_csv("dataset/clean_spotify_dataset.csv", index=False)
     
     #load the clean dataframe into docs format
-    docs = load_dataset(opt["dataset_source"], "review_id", 
-                        type_file="dataframe",
-                        chunk_size=opt["chunk_size"], 
-                        chunk_overlap=opt["chunk_overlap"])
+    try:
+        docs = load_dataset(opt["dataset_source"], "review_id", 
+                            type_file="dataframe",
+                            chunk_size=opt["chunk_size"], 
+                            chunk_overlap=opt["chunk_overlap"])
+    except:
+        docs = None
     
     model_kwargs = {'device': opt["device"]}
-    encode_kwargs = {'normalize_embeddings': opt["normalize_embedding"]}
+    encode_kwargs = {'normalize_embeddings': opt["normalize_embeddings"]}
     embeddings = define_embedding(opt["embedding_name"], model_kwargs, encode_kwargs)
-
+    
     db = load_faiss_db(opt["vectorstore_name"], docs=docs, embeddings=embeddings)
     
     model, tokenizer = define_llm(opt["model_name"], True)
